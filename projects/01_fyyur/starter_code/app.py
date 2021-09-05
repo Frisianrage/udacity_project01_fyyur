@@ -6,8 +6,10 @@ import json
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from sqlalchemy.orm import backref
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
@@ -20,6 +22,9 @@ app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
+
+
+migrate = Migrate(app, db)
 
 # TODO: connect to a local postgresql database
 
@@ -36,8 +41,14 @@ class Venue(db.Model):
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
+    genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean, default=False)
+    seeking_description = db.Column(db.String(500))
+    shows = db.relationship('Show', backref='Artist', lazy='dynamic')
+    
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -52,10 +63,22 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
+    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_description = db.Column(db.String(500))
+    shows = db.relationship('Show', backref='Venue', lazy='dynamic')
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+
+class Show(db.Model):
+  __tablename__ = 'Show'
+  
+  artist_id = db.Column(db.ForeignKey('Artist.id'), primary_key=True)
+  venue_id = db.Column(db.ForeignKey('Venue.id'), primary_key=True)
+  start_time = db.Column(db.String(120))
+  child = db.relationship("Child")
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -215,11 +238,14 @@ def show_venue(venue_id):
 @app.route('/venues/create', methods=['GET'])
 def create_venue_form():
   form = VenueForm()
+  print('This is a test', flush=True)
   return render_template('forms/new_venue.html', form=form)
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
+  data = request.get_json()
+  print('This is a test', flush=True)
   # TODO: modify data to be the data object returned from db insertion
 
   # on successful db insert, flash success
